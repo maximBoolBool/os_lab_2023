@@ -15,6 +15,11 @@
 #include "find_min_max.h"
 #include "utils.h"
 
+void handle_alarm(int signal) {
+    printf("Timeout exceeded, sending SIGKILL to child processes...\n");
+    kill(0, SIGKILL);
+}
+
 int main(int argc, char **argv) {
   int seed = -1;
   int array_size = -1;
@@ -28,6 +33,7 @@ int main(int argc, char **argv) {
                                       {"array_size", required_argument, 0, 0},
                                       {"pnum", required_argument, 0, 0},
                                       {"by_files", no_argument, 0, 'f'},
+                                      
                                       {0, 0, 0, 0}};
 
     int option_index = 0;
@@ -56,6 +62,16 @@ int main(int argc, char **argv) {
           case 3:
             with_files = true;
             break;
+          case 4:
+            if (optarg != NULL) {
+                int timeout = atoi(optarg);
+                if (timeout > 0) {
+                    alarm(timeout);
+                }
+            } else {
+                alarm(10); // default timeout is 10 seconds
+            }
+            break;
 
           defalut:
             printf("Index %d is out of options\n", option_index);
@@ -83,7 +99,9 @@ int main(int argc, char **argv) {
            argv[0]);
     return 1;
   }
-
+  
+  signal(SIGALRM, handle_alarm);
+  
   int *array = malloc(sizeof(int) * array_size);
   GenerateArray(array, array_size, seed);
   int active_child_processes = 0;
